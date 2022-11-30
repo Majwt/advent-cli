@@ -107,8 +107,7 @@ def main():
         help='weather to print the full output from the code',
         action='store_const',
         const=True
-        
-        
+    
     )
     args = parser.parse_args()
     print("AOC CLI for c++")

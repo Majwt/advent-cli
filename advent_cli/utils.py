@@ -40,14 +40,22 @@ def colored(text, color):
 def run_file(year,day,printFullOut:bool):
     currentdir = os.getcwd()
     day = str(day).zfill(2)
+    conf = config.get_local_config()
+    cmd = str(conf.get('compile_cmd'))
+    ext = str(conf.get('file_ext'))
+    outext = str(conf.get('out_ext'))
     filename = f"main{day}"
-    ext = ".cpp"
+    cmd = cmd.replace('{filename}',filename).replace('{ext}',ext).replace('{out_ext}',outext)
+    # ext = ".cpp"
     if not os.path.exists(os.path.join(currentdir,year,day,filename+ext)):
+        
         print(f"File {filename+ext} does not exist")
+        print("Be sure to be in the directory that contains the years folders")
         exit(0)
+    
     print(f"Running {filename+ext}")
-    compileCommand = f'g++ {filename+ext} -o {filename}'
-    print(f"{compileCommand=}")
+    # compileCommand = f'g++ {filename+ext} -o {filename}'
+    print(f"{cmd=}")
     # exit(0)
     lastdir = os.getcwd()
     filepath = os.path.join(currentdir,year,day)
@@ -56,7 +64,8 @@ def run_file(year,day,printFullOut:bool):
     # subprocess.run(compileCommand)
     # ps = subprocess.Popen(f'./{filename}',stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     # out = subprocess.check_output(f'./{filename}').decode()
-    subprocess.Popen(["g++", "".join([filename,ext]),"-o",filename])
+    # subprocess.Popen(["g++", "".join([filename,ext]),"-o",filename])
+    subprocess.Popen(cmd.split(" "))
     output = subprocess.Popen(f"./{filename}", stdout=subprocess.PIPE).communicate()[0].decode()
     
     os.chdir(lastdir)
@@ -85,16 +94,23 @@ def run_file(year,day,printFullOut:bool):
     
     
 def compute_answers(year, day, solution_file='solution', example=False):
-    sys.path.append(os.getcwd())
-    solution = import_module(f'{year}.{day}.{solution_file}')
-    with open(f'{year}/{day}/{"example_" if example else ""}input.txt', 'r') as f:
-        data = solution.parse_input([
-            line.replace('\r', '').replace('\n', '') for line in f.readlines()
-        ])
-    if not isinstance(data, tuple):
-        data = (data,)
-    part1_answer = solution.part1(*data)
-    part2_answer = solution.part2(*data)
+    # sys.path.append(os.getcwd())
+    # solution = import_module(f'{year}.{day}.{solution_file}')
+    # with open(f'{year}/{day}/{"example_" if example else ""}input.txt', 'r') as f:
+    #     data = solution.parse_input([
+    #         line.replace('\r', '').replace('\n', '') for line in f.readlines()
+    #     ])
+    
+    # if not isinstance(data, tuple):
+    #     data = (data,)
+    # part1_answer = solution.part1(*data)
+    # part2_answer = solution.part2(*data)
+    
+    part1_answer, part2_answer = run_file(year,day,False)
+    if part1_answer == '':
+        part1_answer = None
+    if part2_answer == '':
+        part2_answer = None
     return part1_answer, part2_answer
 
 
@@ -103,7 +119,7 @@ def submit_answer(year, day, level, answer):
     r = requests.post(
         f'https://adventofcode.com/{year}/day/{int(day)}/answer',
         data=payload,
-        cookies={'session': config.get_config()['session_cookie']}
+        cookies={'session': config.get_local_config().get('session_cookie')}
     )
     response = r.text
     if "That's the right answer" in response:

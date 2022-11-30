@@ -27,9 +27,9 @@ def get(year, day:str):
         print(colored(f'  {os.getcwd()}/{year}/{day}/', 'red'))
         return
 
-    conf = config.get_config()
+    conf = config.get_local_config()
     r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}',
-                     cookies={'session': conf['session_cookie']})
+                     cookies={'session': conf.get('session_cookie')})
     if r.status_code == 404:
         if 'before it unlocks!' in r.text:
             print(colored('This puzzle has not unlocked yet.', 'red'))
@@ -74,7 +74,7 @@ def get(year, day:str):
                 f'// https://adventofcode.com/{year}\n'
                 f'// day {dayfilled}\n\n'
                 '#include <iostream>\n\n'
-                'int main()\n{\n\n    printf("hello World!");\n\n}'
+                'int main()\n{\n\n    printf(\"hello World!\");\n\n}'
                 )
     print(f'Created {year}/{dayfilled}/main{dayfilled}.cpp')
 
@@ -85,9 +85,9 @@ def stats(year):
         print(colored(f'Defaulting to previous year ({today.year - 1}).', 'red'))
         year = str(today.year - 1)
 
-    conf = config.get_config()
+    conf = config.get_local_config()
     r = requests.get(f'https://adventofcode.com/{year}/leaderboard/self',
-                     cookies={'session': conf['session_cookie']})
+                     cookies={'session': conf.get('session_cookie')})
     if '[Log In]' in r.text:
         print(colored('Session cookie is invalid or expired.', 'red'))
         return
@@ -137,12 +137,15 @@ def stats(year):
 
 
 def private_leaderboard_stats(year):
+    print("Not implemented yet.")
+    exit(0);
     today = dt.today()
     if today.year <= int(year) and today.month < 12:
         print(colored(f'Defaulting to previous year ({today.year - 1}).', 'red'))
         year = str(today.year - 1)
 
     conf = config.get_config()
+    
     if conf['private_leaderboards']:
         for board_id in conf['private_leaderboards']:
             r = requests.get(

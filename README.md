@@ -1,26 +1,27 @@
-# 🎄 advent-cli
-
+# 🎄 advent-cli for c++ (NOT COMPLETED)
+<!-- 
 ![](https://img.shields.io/pypi/v/advent-cli?color=blue&logo=pypi&logoColor=white)
 ![](https://img.shields.io/github/v/release/fergusch/advent-cli?color=brightgreen&logo=github)
 ![](https://img.shields.io/github/v/tag/fergusch/advent-cli?label=latest&logo=github)
 ![](https://img.shields.io/github/workflow/status/fergusch/advent-cli/build?logo=github)
-![](https://img.shields.io/github/workflow/status/fergusch/advent-cli/unit%20tests?label=unit%20tests&logo=github)
+![](https://img.shields.io/github/workflow/status/fergusch/advent-cli/unit%20tests?label=unit%20tests&logo=github) 
+-->
 
-**advent-cli** is a command-line tool for interacting with [Advent of Code](https://adventofcode.com/), specifically geared toward writing solutions in Python. It can be used to view puzzle prompts, download input, submit solutions, and view personal or private stats and leaderboards.
+**advent-cli for c++** is a fork from the **advent-cli** by fergusch and is command-line tool for interacting with [Advent of Code](https://adventofcode.com/), specifically geared toward writing solutions in C++. It can be used to view puzzle prompts, download input, submit solutions, and view personal or private stats and leaderboards.
 
 ![](https://user-images.githubusercontent.com/27470183/145635955-5ea316a2-d028-4954-a144-d87846ed05d9.gif)
 
 ## Installation
 ```
-pip install advent-cli
+pip install git+https://github.com/Majwt/advent-cli.git
 ```
 
-## Setup
+## Setup (DON'T)
 Before you do anything, you'll need to provide advent-cli with a session cookie so it can authenticate as you. To do this, log in to the [Advent of Code website](https://adventofcode.com/) and grab the cookie named `session` from your browser's inspect element tool. Store it in an environment variable on your machine named `ADVENT_SESSION_COOKIE`. A fresh session cookie is good for about a month, after which you'll need to repeat these steps.
 
 A full list of configuration options can be found [here](#configuration).
 
-## Usage
+## Usage (DON'T)
 
 advent-cli can be invoked using the `advent` command, or `python -m advent_cli`.
 
