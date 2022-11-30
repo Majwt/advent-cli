@@ -21,7 +21,7 @@ from .utils import (
 )
 
 
-def get(year, day):
+def get(year, day:str):
     if os.path.exists(f'{year}/{day}/'):
         print(colored('Directory already exists:', 'red'))
         print(colored(f'  {os.getcwd()}/{year}/{day}/', 'red'))
@@ -45,8 +45,8 @@ def get(year, day):
     elif '[Log In]' in r.text:
         print(colored('Session cookie is invalid or expired.', 'red'))
         return
-
-    os.makedirs(f'{year}/{day}/')
+    dayfilled = day.zfill(2)
+    os.makedirs(f'{year}/{dayfilled}/')
 
     soup = BeautifulSoup(r.text, 'html.parser')
     part1_html = soup.find('article', class_='day-desc').decode_contents()
@@ -56,28 +56,27 @@ def get(year, day):
 
     # also makes markdown look better
     part1_html = part1_html.replace('\n\n', '\n')
-
-    with open(f'{year}/{day}/prompt.md', 'w') as f:
+    with open(f'{year}/{dayfilled}/prompt.md', 'w') as f:
         f.write(custom_markdownify(part1_html))
-    print(f'Downloaded prompt to {year}/{day}/prompt.md')
+    print(f'Downloaded prompt to {year}/{dayfilled}/prompt.md')
 
     r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}/input',
                      cookies={'session': conf['session_cookie']})
-    with open(f'{year}/{day}/input.txt', 'w') as f:
+    with open(f'{year}/{dayfilled}/input.txt', 'w') as f:
         f.write(r.text)
-    print(f'Downloaded input to {year}/{day}/input.txt')
+    print(f'Downloaded input to {year}/{dayfilled}/input.txt')
 
-    open(f'{year}/{day}/example_input.txt', 'w').close()
-    print(f'Created {year}/{day}/example_input.txt')
+    open(f'{year}/{dayfilled}/example_input.txt', 'w').close()
+    print(f'Created {year}/{dayfilled}/example_input.txt')
 
-    with open(f'{year}/{day}/solution.py', 'w') as f:
-        f.write(f'## advent of code {year}\n'
-                f'## https://adventofcode.com/{year}\n'
-                f'## day {day}\n\n'
-                'def parse_input(lines):\n    pass\n\n'
-                'def part1(data):\n    pass\n\n'
-                'def part2(data):\n    pass')
-    print(f'Created {year}/{day}/solution.py')
+    with open(f'{year}/{dayfilled}/main{dayfilled}.cpp', 'w') as f:
+        f.write(f'// advent of code {year}\n'
+                f'// https://adventofcode.com/{year}\n'
+                f'// day {dayfilled}\n\n'
+                '#include <iostream>\n\n'
+                'int main()\n{\n\n    printf("hello World!");\n\n}'
+                )
+    print(f'Created {year}/{dayfilled}/main{dayfilled}.cpp')
 
 
 def stats(year):

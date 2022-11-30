@@ -5,6 +5,7 @@ import re as re
 import requests
 import sys
 import pytz
+import subprocess
 
 from datetime import datetime as dt
 from enum import Enum
@@ -36,7 +37,53 @@ def colored(text, color):
     else:
         return tc_colored(text, color)
 
-
+def run_file(year,day,printFullOut:bool):
+    currentdir = os.getcwd()
+    day = str(day).zfill(2)
+    filename = f"main{day}"
+    ext = ".cpp"
+    if not os.path.exists(os.path.join(currentdir,year,day,filename+ext)):
+        print(f"File {filename+ext} does not exist")
+        exit(0)
+    print(f"Running {filename+ext}")
+    compileCommand = f'g++ {filename+ext} -o {filename}'
+    print(f"{compileCommand=}")
+    # exit(0)
+    lastdir = os.getcwd()
+    filepath = os.path.join(currentdir,year,day)
+    os.chdir(filepath)
+    print(os.getcwd())
+    # subprocess.run(compileCommand)
+    # ps = subprocess.Popen(f'./{filename}',stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    # out = subprocess.check_output(f'./{filename}').decode()
+    subprocess.Popen(["g++", "".join([filename,ext]),"-o",filename])
+    output = subprocess.Popen(f"./{filename}", stdout=subprocess.PIPE).communicate()[0].decode()
+    
+    os.chdir(lastdir)
+    print(os.getcwd())
+    lines = output.splitlines()
+    part1_answer = ""
+    part2_answer = ""
+    for line in lines:
+        line = line.lower()
+        part = line.find("part")
+        if part != -1:
+            if line[part+4] == '1':
+                part1_answer = int(line[part+6:])
+            elif line[part+4] == '2':
+                part2_answer = int(line[part+6:])
+        if printFullOut:
+            print(line)
+            
+        
+        
+    
+    print(f"{part1_answer= }")
+    print(f"{part2_answer= }")
+    return part1_answer,part2_answer
+    
+    
+    
 def compute_answers(year, day, solution_file='solution', example=False):
     sys.path.append(os.getcwd())
     solution = import_module(f'{year}.{day}.{solution_file}')

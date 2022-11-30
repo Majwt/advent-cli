@@ -2,8 +2,10 @@ import argparse
 from datetime import datetime as dt
 
 from . import commands
+from . import config
 from ._version import __version__
 from .utils import CustomHelpFormatter
+from .utils import run_file
 
 
 def main():
@@ -90,9 +92,28 @@ def main():
         'date',
         help='the year and day in YYYY/DD format (e.g. "2021/01")'
     )
+    parser_run = command_subparsers.add_parser(
+        'run',
+        help='shows the config'
+    )
+    parser_run.add_argument(
+        'date',
+        help='the year and day in YYYY/DD format (e.g. "2021/01")'
+    )
+    parser_run.add_argument(
+        '-p', '--print',
+        dest='printfullout',
+        default=False,
+        help='weather to print the full output from the code',
+        action='store_const',
+        const=True
+        
+        
+    )
     args = parser.parse_args()
-
+    print("AOC CLI for c++")
     if args.command == 'get':
+        
         year, day = args.date.split('/')
         commands.get(year, day)
 
@@ -113,3 +134,10 @@ def main():
     elif args.command == 'countdown':
         year, day = args.date.split('/')
         commands.countdown(year, day)
+    elif args.command == 'run':
+        printfull = args.printfullout
+        print(printfull)
+        year, day = args.date.split('/')
+        run_file(year, day,printfull)
+        
+    

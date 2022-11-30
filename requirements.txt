@@ -1,13 +1,15 @@
-beautifulsoup4 >= 4.10.0
-markdownify >= 0.10.0
-pytz >= 2021.1
-requests >= 2.26.0
-tabulate >= 0.8.9
-termcolor >= 1.1.0
-windows-curses >=2.3.0; platform_system=='Windows'
-freezegun >= 1.1.0
-mock >= 4.0.3
-pytest >= 6.2.5
-pytest-cov >= 3.0.0
-pytest-clarity >= 1.0.1
-pytest-pycodestyle >= 2.2.0
+-e git+https://github.com/Majwt/advent-cli.git@d8f1863da9023addb56c9e1cbf37db8301a37edb#egg=advent_cli
+beautifulsoup4==4.11.1
+certifi==2022.9.24
+charset-normalizer==2.1.1
+configparser==5.3.0
+idna==3.4
+markdownify==0.11.6
+mock==4.0.3
+pytz==2022.5
+requests==2.28.1
+six==1.16.0
+soupsieve==2.3.2.post1
+tabulate==0.9.0
+termcolor==2.0.1
+urllib3==1.26.12
