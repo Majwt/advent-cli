@@ -19,7 +19,9 @@ from .utils import (
     submit_answer,
     Status
 )
-
+headers = {
+    'User-Agent': 'https://github.com/Majwt/advent-cli by theodor.wase@icloud.com'
+}
 
 def get(year, day:str):
     if os.path.exists(f'{year}/{day}/'):
@@ -28,8 +30,9 @@ def get(year, day:str):
         return
 
     conf = config.get_local_config()
+    
     r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}',
-                     cookies={'session': conf.get('session_cookie')})
+                     cookies={'session': conf.get('session_cookie')},headers=headers)
     if r.status_code == 404:
         if 'before it unlocks!' in r.text:
             print(colored('This puzzle has not unlocked yet.', 'red'))
@@ -61,7 +64,7 @@ def get(year, day:str):
     print(f'Downloaded prompt to {year}/{dayfilled}/prompt.md')
 
     r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}/input',
-                     cookies={'session': conf['session_cookie']})
+                     cookies={'session': conf['session_cookie']},headers=headers)
     with open(f'{year}/{dayfilled}/input.txt', 'w') as f:
         f.write(r.text)
     print(f'Downloaded input to {year}/{dayfilled}/input.txt')
@@ -87,7 +90,7 @@ def stats(year):
 
     conf = config.get_local_config()
     r = requests.get(f'https://adventofcode.com/{year}/leaderboard/self',
-                     cookies={'session': conf.get('session_cookie')})
+                     cookies={'session': conf.get('session_cookie')},headers=headers)
     if '[Log In]' in r.text:
         print(colored('Session cookie is invalid or expired.', 'red'))
         return
@@ -150,7 +153,8 @@ def private_leaderboard_stats(year):
         for board_id in conf['private_leaderboards']:
             r = requests.get(
                 f'https://adventofcode.com/{year}/leaderboard/private/view/{board_id}',
-                cookies={'session': conf['session_cookie']}
+                cookies={'session': conf['session_cookie']},
+                headers=headers
             )
             if '[Log In]' in r.text:
                 print(colored('Session cookie is invalid or expired.', 'red'))

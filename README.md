@@ -1,4 +1,4 @@
-# 🎄 advent-cli for c++ (NOT COMPLETED)
+# 🎄 advent-cli for c++ (NOT COMPLETED DON'T USE)
 <!-- 
 ![](https://img.shields.io/pypi/v/advent-cli?color=blue&logo=pypi&logoColor=white)
 ![](https://img.shields.io/github/v/release/fergusch/advent-cli?color=brightgreen&logo=github)
@@ -11,7 +11,7 @@
 
 ![](https://user-images.githubusercontent.com/27470183/145635955-5ea316a2-d028-4954-a144-d87846ed05d9.gif)
 
-## Installation
+## Installation (DON'T)
 ```
 pip install git+https://github.com/Majwt/advent-cli.git
 ```

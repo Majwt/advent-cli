@@ -26,6 +26,7 @@ def get_config():
     if 'ADVENT_SESSION_COOKIE' in os.environ:
         config['session_cookie'] = os.environ['ADVENT_SESSION_COOKIE']
     else:
+        print("test old")
         # this is to avoid importing colored() from utils.py, resulting in a circular import
         error_message = ('Session cookie not set.\nGrab your AoC session cookie from a browser'
                          ' and store it in an environment variable ADVENT_SESSION_COOKIE.')
@@ -38,40 +39,47 @@ def get_config():
 
 def get_local_config() -> dict:
     Config = ConfigParser()
-    if os.path.exists(os.path.expanduser('~/.aoc-cfg/config.ini')):
+    
+    if os.path.isfile(os.path.expanduser('~/.aoc-cfg/config.ini')):
+        print("here")
         Config.read(os.path.expanduser("~/.aoc-cfg/config.ini"))
-        if Config.get('DEFAULT','session_cookie') == '':
+        if Config['local']['session_cookie'] == '':
             error_message = ('Session cookie not set.\nGrab your AoC session cookie from a browser'
                          ' and store it in the config file at ~/.aoc-cfg/config.ini')
             print(error_message)
             sys.exit(1)
-        if Config.get('DEFAULT','compile_cmd') == '':
+        if Config['local']['compile_cmd'] == '':
             error_message = ('Compile command not set.\nSet the compile command in the config file at ~/.aoc-cfg/config.ini')
             print(error_message)
             sys.exit(1)
-        if Config.get('DEFAULT','file_ext') == '':
+        if Config['local']['file_ext'] == '':
             error_message = ('File extension not set.\nSet the file extension in the config file at ~/.aoc-cfg/config.ini')
             print(error_message)
             sys.exit(1)
-        if Config.get('DEFAULT','out_ext') == '':
+        if Config['local']['out_ext'] == '':
             error_message = ('Output extension not set.\nSet the output extension in the config file at ~/.aoc-cfg/config.ini')
             print(error_message)
             sys.exit(1)
-        if Config.get('DEFAULT','run_cmd') == '':
+        if Config['local']['run_cmd'] == '':
             error_message = ('Run command not set.\nSet the run command in the config file at ~/.aoc-cfg/config.ini')
             print(error_message)
             sys.exit(1)
         
-        return Config['DEFAULT']
+        return Config['local']
     else:
+        print("test")
         with open(os.path.expanduser("~/.aoc-cfg/config.ini"),'w') as f:
-            Config.add_section('DEFAULT')
-            Config.set('DEFAULT','session_cookie','')
-            Config.set('DEFAULT','compile_cmd','g++ {filename}{ext} -o {filename}{out_ext}')
-            Config.set('DEFAULT','run_cmd','./{filename}')
-            Config.set('DEFAULT','out_ext','.exe')
-            Config.set('DEFAULT','file_ext','.cpp')
+            Config['local'] = {}
+            
+            Config['local']['session_cookie'] = ''
+            Config['local']['compile_cmd'] = 'g++ {filename}{ext} -o {filename}{out_ext}'
+            Config['local']['run_cmd'] = './{filename}'
+            Config['local']['out_ext'] ='.exe'
+            Config['local']['file_ext'] = '.cpp'
             
             
             Config.write(f)
+            sys.exit(1);
     
+if __name__ == "__main__":
+    get_local_config()
