@@ -5,7 +5,6 @@ from . import commands
 from . import config
 from ._version import __version__
 from .utils import CustomHelpFormatter
-from .utils import run_file
 
 
 def main():
@@ -26,6 +25,12 @@ def main():
     parser_get.add_argument(
         'date',
         help='the year and day in YYYY/DD format (e.g. "2021/01")'
+    )
+    parser_get.add_argument(
+        '-p','--propmt',
+        dest='prompt',
+        action='store_true',
+        help='get the propmt only for the specified day'
     )
     parser_stats = command_subparsers.add_parser(
         'stats',
@@ -60,9 +65,15 @@ def main():
         help='use example_input.txt for input'
     )
     parser_test.add_argument(
+        '-p', '--print',
+        dest='print_output',
+        default=False,
+        action='store_true'
+    )
+    parser_test.add_argument(
         '-f', '--solution-file',
         dest='solution_file',
-        default='solution',
+        default='main{day}{ext}',
         help='solution file to run instead of solution.py\n'
              '(e.g. "solution2" for solution2.py)'
     )
@@ -109,22 +120,33 @@ def main():
         const=True
     
     )
+    parser_info = command_subparsers.add_parser(
+        'info',
+        help='show all stored variable in the config.ini'
+    )
+    parser_priv = command_subparsers.add_parser(
+        'private'
+    )
+    parser_priv.add_argument(
+        'year'
+    )
+    
     args = parser.parse_args()
     print("AOC CLI for c++")
     if args.command == 'get':
         
         year, day = args.date.split('/')
-        commands.get(year, day)
+        commands.get(year, day,args.prompt)
 
     elif args.command == 'stats':
         if args.show_private:
-            commands.private_leaderboard_stats(args.year)
+            commands.private_leaderboards_json(args.year)
         else:
             commands.stats(args.year)
 
     elif args.command == 'test':
         year, day = args.date.split('/')
-        commands.test(year, day, solution_file=args.solution_file, example=args.run_example)
+        commands.test(year, day, solution_file=args.solution_file, example=args.run_example, print_output=args.print_output)
 
     elif args.command == 'submit':
         year, day = args.date.split('/')
@@ -137,6 +159,14 @@ def main():
         printfull = args.printfullout
         print(printfull)
         year, day = args.date.split('/')
-        run_file(year, day,printfull)
+    elif args.command == 'info':
+        
+        conf = config.get_local_config()
+        print("printing config settings")
+        for options,values in conf['local'].items():
+            print(options,values,sep=": ")
+    elif args.command == 'private':
+        commands.private_leaderboards_json(args.year)
+        
         
     

@@ -27,7 +27,7 @@ class Status(Enum):
 
 
 def colored(text, color):
-    if config.get_config()['disable_color']:
+    if bool(int(config.get_local_config()['local']['disable_color'])):
         if text == '*':
             if color == 'cyan':
                 return '/'
@@ -37,14 +37,17 @@ def colored(text, color):
     else:
         return tc_colored(text, color)
 
-def run_file(year,day,printFullOut:bool):
+    
+    
+def compute_answers(year, day, solution_file='solution', example=False, printFullOut:bool=False):
     currentdir = os.getcwd()
-    day = str(day).zfill(2)
+    day = f"{int(day):02d}"
     conf = config.get_local_config()
-    cmd = str(conf.get('compile_cmd'))
-    ext = str(conf.get('file_ext'))
-    outext = str(conf.get('out_ext'))
+    cmd = str(conf['local']['compile_cmd'])
+    ext = str(conf['local']['file_ext'])
+    outext = str(conf['local']['out_ext'])
     filename = f"main{day}"
+    runcmd = str(conf['local']['run_cmd']).replace('{filename}',filename).replace('{ext}',ext).replace('{out_ext}',outext)
     cmd = cmd.replace('{filename}',filename).replace('{ext}',ext).replace('{out_ext}',outext)
     # ext = ".cpp"
     if not os.path.exists(os.path.join(currentdir,year,day,filename+ext)):
@@ -53,73 +56,52 @@ def run_file(year,day,printFullOut:bool):
         print("Be sure to be in the directory that contains the years folders")
         exit(0)
     
-    print(f"Running {filename+ext}")
-    # compileCommand = f'g++ {filename+ext} -o {filename}'
-    print(f"{cmd=}")
-    # exit(0)
+    print(colored(f"compiling \'{filename+ext}\' with:",'green'))
+    print(f"\'{cmd=}\'")
+    print(f"Running \'{filename+ext}\' with: \'{runcmd}\'")
     lastdir = os.getcwd()
     filepath = os.path.join(currentdir,year,day)
     os.chdir(filepath)
-    print(os.getcwd())
-    # subprocess.run(compileCommand)
-    # ps = subprocess.Popen(f'./{filename}',stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    # out = subprocess.check_output(f'./{filename}').decode()
-    # subprocess.Popen(["g++", "".join([filename,ext]),"-o",filename])
-    subprocess.Popen(cmd.split(" "))
-    output = subprocess.Popen(f"./{filename}", stdout=subprocess.PIPE).communicate()[0].decode()
+    p = subprocess.Popen(cmd.split(" "))
+    p.communicate()
+    if example:
+        runcmd += " example_input.txt"
+    else:
+        runcmd += " input.txt"
+    output = subprocess.Popen(runcmd.split(' '), stdout=subprocess.PIPE).communicate()[0].decode()
     
     os.chdir(lastdir)
-    print(os.getcwd())
     lines = output.splitlines()
-    part1_answer = ""
-    part2_answer = ""
+    part1_answer = None
+    part2_answer = None
     for line in lines:
-        line = line.lower()
-        part = line.find("part")
-        if part != -1:
-            if line[part+4] == '1':
-                part1_answer = int(line[part+6:])
-            elif line[part+4] == '2':
-                part2_answer = int(line[part+6:])
         if printFullOut:
             print(line)
+        line = line.lower()
+        part = line.find("part")
+        colon = line.find(":")
+        if part != -1 and colon != -1:
+            if '1' in line[part:colon]:
+                part1_answer = int(line[colon+1:])
+            elif '2' in line[part:colon]:
+                part2_answer = int(line[colon+1:])
             
         
         
-    
-    print(f"{part1_answer= }")
-    print(f"{part2_answer= }")
+    if part1_answer is not None:
+        print(f"{part1_answer= }")
+    if part2_answer is not None:
+        print(f"{part2_answer= }")
     return part1_answer,part2_answer
-    
-    
-    
-def compute_answers(year, day, solution_file='solution', example=False):
-    # sys.path.append(os.getcwd())
-    # solution = import_module(f'{year}.{day}.{solution_file}')
-    # with open(f'{year}/{day}/{"example_" if example else ""}input.txt', 'r') as f:
-    #     data = solution.parse_input([
-    #         line.replace('\r', '').replace('\n', '') for line in f.readlines()
-    #     ])
-    
-    # if not isinstance(data, tuple):
-    #     data = (data,)
-    # part1_answer = solution.part1(*data)
-    # part2_answer = solution.part2(*data)
-    
-    part1_answer, part2_answer = run_file(year,day,False)
-    if part1_answer == '':
-        part1_answer = None
-    if part2_answer == '':
-        part2_answer = None
-    return part1_answer, part2_answer
 
 
 def submit_answer(year, day, level, answer):
     payload = {'level': level, 'answer': answer}
+    print("post request")
     r = requests.post(
         f'https://adventofcode.com/{year}/day/{int(day)}/answer',
         data=payload,
-        cookies={'session': config.get_local_config().get('session_cookie')}
+        cookies={'session': config.get_local_config()['local']['session_cookie']}
     )
     response = r.text
     if "That's the right answer" in response:
@@ -203,4 +185,4 @@ class CustomMarkdownConverter(markdownify.MarkdownConverter):
 
 
 def custom_markdownify(html, **options):
-    return CustomMarkdownConverter(config.get_config()['md_em'], **options).convert(html)
+    return CustomMarkdownConverter(config.get_local_config()['local']['md_em'], **options).convert(html)

@@ -8,8 +8,9 @@ import time
 
 from bs4 import BeautifulSoup
 from datetime import datetime as dt
+from datetime import timedelta
 from tabulate import tabulate
-
+import json
 from . import config
 from .utils import (
     colored,
@@ -23,16 +24,21 @@ headers = {
     'User-Agent': 'https://github.com/Majwt/advent-cli by theodor.wase@icloud.com'
 }
 
-def get(year, day:str):
-    if os.path.exists(f'{year}/{day}/'):
-        print(colored('Directory already exists:', 'red'))
-        print(colored(f'  {os.getcwd()}/{year}/{day}/', 'red'))
-        return
-
+def get(year, day:str,promptonly:bool):
+    dayfilled = day.zfill(2)
+        
+    if not promptonly:
+        if os.path.exists(f'{year}/{dayfilled}/'):
+            print(colored('Directory already exists:', 'red'))
+            print(colored(f'  {os.getcwd()}/{year}/{dayfilled}/', 'red'))
+            return
+        
+        os.makedirs(f'{year}/{dayfilled}/')
     conf = config.get_local_config()
-    
+    print(conf['local']['session_cookie'])
+    print("post request")
     r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}',
-                     cookies={'session': conf.get('session_cookie')},headers=headers)
+                     cookies={'session': conf['local']['session_cookie']},headers=headers)
     if r.status_code == 404:
         if 'before it unlocks!' in r.text:
             print(colored('This puzzle has not unlocked yet.', 'red'))
@@ -48,23 +54,33 @@ def get(year, day:str):
     elif '[Log In]' in r.text:
         print(colored('Session cookie is invalid or expired.', 'red'))
         return
-    dayfilled = day.zfill(2)
-    os.makedirs(f'{year}/{dayfilled}/')
 
     soup = BeautifulSoup(r.text, 'html.parser')
-    part1_html = soup.find('article', class_='day-desc').decode_contents()
+    parts_html = soup.find_all('article', class_='day-desc')
+    parts_str = []
+    parts_str.clear()
+    for part in parts_html:
+        s = part.decode_contents()
+        
+        # remove hyphens from title sections, makes markdown look nicer
+        s = re.sub('--- (.*) ---', r'\1', s)
+        # also makes markdown look better
+        s = s.replace('\n\n', '\n')
+        parts_str.append(s)
 
-    # remove hyphens from title sections, makes markdown look nicer
-    part1_html = re.sub('--- (.*) ---', r'\1', part1_html)
-
-    # also makes markdown look better
-    part1_html = part1_html.replace('\n\n', '\n')
     with open(f'{year}/{dayfilled}/prompt.md', 'w') as f:
-        f.write(custom_markdownify(part1_html))
-    print(f'Downloaded prompt to {year}/{dayfilled}/prompt.md')
+        pass
 
+    with open(f'{year}/{dayfilled}/prompt.md', 'a') as f:
+        for part in parts_str:
+            f.write(custom_markdownify(part))
+            
+    print(f'Downloaded prompt to {year}/{dayfilled}/prompt.md')
+    if promptonly:
+        return
+    print("post request")
     r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}/input',
-                     cookies={'session': conf['session_cookie']},headers=headers)
+                     cookies={'session': conf['local']['session_cookie']},headers=headers)
     with open(f'{year}/{dayfilled}/input.txt', 'w') as f:
         f.write(r.text)
     print(f'Downloaded input to {year}/{dayfilled}/input.txt')
@@ -83,14 +99,16 @@ def get(year, day:str):
 
 
 def stats(year):
+    print(colored("stats",'red'))
     today = dt.today()
     if today.year <= int(year) and today.month < 12:
         print(colored(f'Defaulting to previous year ({today.year - 1}).', 'red'))
         year = str(today.year - 1)
 
     conf = config.get_local_config()
+    print("Don't use this command too often, it's not cached")
     r = requests.get(f'https://adventofcode.com/{year}/leaderboard/self',
-                     cookies={'session': conf.get('session_cookie')},headers=headers)
+                     cookies={'session': conf['local']['session_cookie']},headers=headers)
     if '[Log In]' in r.text:
         print(colored('Session cookie is invalid or expired.', 'red'))
         return
@@ -132,47 +150,55 @@ def stats(year):
             for x in ['----\nTime', '(Part 2)\nRank', '----\nScore']]
     ]), '\n')
 
-    if conf['private_leaderboards']:
-        num_private_leaderboards = len(conf['private_leaderboards'])
+    if conf['local']['private_leaderboards'].split(','):
+        num_private_leaderboards = len(conf['local']['private_leaderboards'].split(','))
         print(colored(f'You are a member of {num_private_leaderboards} '
                       f'private leaderboard(s).', 'grey'))
         print(colored(f'Use "advent stats {year} --private" to see them.\n', 'grey'))
 
 
 def private_leaderboard_stats(year):
-    print("Not implemented yet.")
-    exit(0);
+    print("Private leaderboards")
     today = dt.today()
     if today.year <= int(year) and today.month < 12:
         print(colored(f'Defaulting to previous year ({today.year - 1}).', 'red'))
         year = str(today.year - 1)
 
-    conf = config.get_config()
+    conf = config.get_local_config()
+    pLeaderBoards = conf['local']['private_leaderboards'].split(',')
     
-    if conf['private_leaderboards']:
-        for board_id in conf['private_leaderboards']:
+    if pLeaderBoards:
+        for board_id in pLeaderBoards:
+            board_id = int(board_id.strip())
+            print(conf['local']['session_cookie'])
+            print(f'https://adventofcode.com/{year}/leaderboard/private/view/{board_id}')
             r = requests.get(
                 f'https://adventofcode.com/{year}/leaderboard/private/view/{board_id}',
-                cookies={'session': conf['session_cookie']},
+                cookies={'session': conf['local']['session_cookie']},
                 headers=headers
             )
             if '[Log In]' in r.text:
                 print(colored('Session cookie is invalid or expired.', 'red'))
                 return
-
+            print(r.text)
             soup = BeautifulSoup(r.text, 'html.parser')
-
-            intro_text = soup.select('article p')[0].text
-            board_owner = soup.find('div', class_='user').contents[0].strip() \
-                if 'This is your' in intro_text \
-                else re.findall(r'private leaderboard of (.*) for', intro_text)[0]
+            l = re.findall(r'private leaderboard of (.*) for', soup.main.article.p.text)
+            
+            board_owner = 'Unknown'
+            # with open("html.txt",'w') as f:
+            #     f.write(soup)
+            if len(board_owner) >=1:
+                board_owner = l[0]
+            # board_owner = soup.find('div', class_='user').contents[0].strip() \
+            #     if 'This is your' in intro_text \
+            #     else re.findall(r'private leaderboard of (.*) for', intro_text)[0]
 
             rows = soup.find_all('div', class_='privboard-row')[1:]
-
             top_score_len = len(rows[0].find_all(text=True, recursive=False)[0].strip())
             print(f"\n{board_owner}'s private leaderboard {colored(f'({board_id})', 'grey')}")
             print(f'\n{" "*(top_score_len+14)}1111111111222222'
                   f'\n{" "*(top_score_len+5)}1234567890123456789012345')
+            
 
             for row in rows:
                 position = row.find('span', class_='privboard-position').text
@@ -197,7 +223,7 @@ def private_leaderboard_stats(year):
                         print(' ', end='')
 
                 print(f' {name}', end=' ')
-                print(f'({colored(name_link, "blue")})' if name_link is not None else '')
+                print(f'({colored(name_link.split("//")[-1], "blue")})' if name_link is not None else '')
 
             print()
             print(f'({colored("*", "yellow")} 2 stars) '
@@ -209,42 +235,134 @@ def private_leaderboard_stats(year):
         print(colored('Set the environment variable ADVENT_PRIV_BOARDS to '
                       'a comma-separated list of private leaderboard IDs.', 'red'))
 
+def updateLeaderboardCache(year,board_id):
+    conf = config.get_local_config()
+    print("post request")
+    r = requests.get(
+                f"https://adventofcode.com/{year}/leaderboard/private/view/{board_id}.json",
+                cookies={'session': conf['local']['session_cookie']},
+                headers={'User-Agent': 'Theodor.Wase@icloud.com https://github.com/Majwt/advent-cli'}
+            ).json()
+    r['last_access'] = dt.timestamp(dt.now())
+    with open(f"{os.path.expanduser('~/.aoc-cfg')}/private_leaderboard_{year}_{board_id}.json", 'w') as f:
+        f.write(json.dumps(r, indent=4))
+        
 
-def test(year, day, solution_file='solution', example=False):
+def private_leaderboards_json(year):
+    print("Private leaderboards")
+    today = dt.today()
+    if today.year <= int(year) and today.month < 12:
+        print(colored(f'Defaulting to previous year ({today.year - 1}).', 'red'))
+        year = str(today.year - 1)
 
-    if not os.path.exists(f'{year}/{day}/'):
+    conf = config.get_local_config()
+    pLeaderBoards = conf['local']['private_leaderboards'].split(',')
+    if len(pLeaderBoards) < 1:
+        print(colored('You are not a member of any private leaderboards '
+                      'or you have not configured them.', 'red'))
+        print(colored('Set the environment variable ADVENT_PRIV_BOARDS to '
+                      'a comma-separated list of private leaderboard IDs.', 'red'))
+        return
+    board_id = pLeaderBoards[0].strip()
+    if not os.path.exists(f"{os.path.expanduser('~/.aoc-cfg')}/private_leaderboard_{year}_{board_id}.json"):
+        with open(f"{os.path.expanduser('~/.aoc-cfg')}/private_leaderboard_{year}_{board_id}.json", 'w') as f:
+            f.write("")
+            
+    with open(f"{os.path.expanduser('~/.aoc-cfg')}/private_leaderboard_{year}_{board_id}.json", 'r') as f:
+        string = f.read()
+        if os.path.getsize(f"{os.path.expanduser('~/.aoc-cfg')}/private_leaderboard_{year}_{board_id}.json") > 0:
+            r = json.loads(string)
+            
+            dt.timestamp(dt.utcnow())
+            min_age = 60*60
+            if 'last_access' not in r or ('last_access' in r and dt.timestamp(dt.now()) - r['last_access'] > min_age):
+                updateLeaderboardCache(year,board_id)
+            else:
+                
+                current_td = timedelta(seconds=min_age - round(timedelta(seconds=abs(dt.timestamp(dt.now())-r['last_access'])).total_seconds()))
+                
+                print(f"cache is still valid for {current_td}")
+        else:
+            updateLeaderboardCache(year,board_id)
+            print("cache was empty, try again")
+            return
+        
+    owner_id = str(r['owner_id'])
+    owner_name = 'Unknown'
+    if owner_id in r['members']:
+        owner_name = r['members'][owner_id]['name']
+    members = [r['members'][x] for x in r['members']]
+    
+    top_score_len = len(str(r['members'][owner_id]['stars']))
+    print_leaderboard(members, owner_name,board_id,top_score_len)
+    
+
+def print_leaderboard(members,owner_name,board_id,top_score_len):
+    members.sort(key=lambda x: x['local_score'], reverse=True)    
+    print(f"\n{owner_name}'s private leaderboard {colored(f'({board_id})', 'grey')}")
+    print(f'\n{" "*(top_score_len+14)}1111111111222222'
+          f'\n{" "*(top_score_len+5)}1234567890123456789012345')
+    for i,member in enumerate(members):
+        position = f"  {i})" if len(str(i)) == 1 else f"{i}) {members[member]['local_score']}"
+        print(f'{position}', end='  ')
+        for day in range(1,26):
+            if str(day) in member['completion_day_level']:
+                class_ = len(member['completion_day_level'][str(day)])
+                if class_ == 2:
+                    print(colored('*', 'yellow'), end='')
+                elif class_ == 1:
+                    print(colored('*', 'cyan'), end='')
+                elif class_ == 0:
+                    print(colored('*', 'grey'), end='')
+            else:
+                print(' ', end='')
+        id = f'({member["id"]})'
+        
+        print(f' {member["name"]} {colored(id, "grey")}')
+    print(f'({colored("*", "yellow")} 2 stars) '
+            f'({colored("*", "cyan")} 1 star) '
+            f'({colored("*", "grey")} 0 stars)\n')
+
+def test(year, day, solution_file='main{day}{ext}', example=False, print_output=False):
+    conf = config.get_local_config()
+    ext = conf['local']['file_ext']
+    day = int(day)
+    if solution_file == 'main{day}{ext}':
+        solution_file = f'main{day:02d}{ext}'
+    print(f'Testing {solution_file}...')
+    if not os.path.exists(f'{os.getcwd()}/{year}/{day:02d}/'):
         print(colored('Directory does not exist:', 'red'))
-        print(colored(f'  "{os.getcwd()}/{year}/{day}/"', 'red'))
+        print(colored(f'  "{os.getcwd()}/{year}/{day:02d}/"', 'red'))
         return
 
     if example:
-        if os.stat(f'{year}/{day}/example_input.txt').st_size == 0:
+        if os.stat(f'{year}/{day:02d}/example_input.txt').st_size == 0:
             print(colored('Example input file is empty:', 'red'))
-            print(colored(f'  {os.getcwd()}/{year}/{day}/example_input.txt', 'red'))
+            print(colored(f'  {os.getcwd()}/{year}/{day:02d}/example_input.txt', 'red'))
             return
         else:
             print(colored('(Using example input)', 'red'))
 
-    if solution_file != 'solution':
-        if not os.path.exists(f'{year}/{day}/{solution_file}.py'):
+    if solution_file != f'main{day:02d}{ext}':
+        if not os.path.exists(f'{year}/{day:02d}/{solution_file}{ext}'):
             print(colored('Solution file does not exist:', 'red'))
-            print(colored(f'  "{os.getcwd()}/{year}/{day}/{solution_file}.py"', 'red'))
+            print(colored(f'  "{os.getcwd()}/{year}/{day:02d}/{solution_file}{ext}"', 'red'))
             return
-        print(colored(f'(Using {solution_file}.py)', 'red'))
+        print(colored(f'(Using {solution_file}{ext})', 'red'))
 
     part1_answer, part2_answer = compute_answers(year, day,
                                                  solution_file=solution_file,
-                                                 example=example)
+                                                 example=example,printFullOut=print_output)
     if part1_answer is not None:
         print(f'{colored("Part 1:", "cyan")} {part1_answer}')
-        if part2_answer is not None:
-            print(f'{colored("Part 2:", "yellow")} {part2_answer}')
-    else:
+    if part2_answer is not None:
+        print(f'{colored("Part 2:", "yellow")} {part2_answer}')
+    if part1_answer is None and part2_answer is None:
         print(colored('No solution implemented', 'red'))
         return
 
-    if solution_file != 'solution':
-        part1_answer_orig, part2_answer_orig = compute_answers(year, day, example=example)
+    if solution_file != f'main{day:02d}{ext}':
+        part1_answer_orig, part2_answer_orig = compute_answers(year, day, example=example,printFullOut=print_output)
         if part1_answer == part1_answer_orig and part2_answer == part2_answer_orig:
             print(colored('Output matches solution.py', 'green'))
         else:
@@ -252,18 +370,14 @@ def test(year, day, solution_file='solution', example=False):
 
 
 def submit(year, day, solution_file='solution'):
-
-    if not os.path.exists(f'{year}/{day}/'):
+    print("submit")
+    dayfilled = str(day).zfill(2)
+    if not os.path.exists(f'{year}/{dayfilled}/'):
         print(colored('Directory does not exist:', 'red'))
-        print(colored(f'  "{os.getcwd()}/{year}/{day}/"', 'red'))
+        print(colored(f'  "{os.getcwd()}/{year}/{dayfilled}/"', 'red'))
         return
 
-    if solution_file != 'solution':
-        if not os.path.exists(f'{year}/{day}/{solution_file}.py'):
-            print(colored('Solution file does not exist:', 'red'))
-            print(colored(f'  "{os.getcwd()}/{year}/{day}/{solution_file}.py"', 'red'))
-            return
-        print(colored(f'(Using {solution_file}.py)', 'red'))
+    
 
     part1_answer, part2_answer = compute_answers(year, day, solution_file=solution_file)
 
@@ -285,9 +399,9 @@ def submit(year, day, solution_file='solution'):
             print(f'Day {int(day)} complete!')
         elif part1_answer is not None:
             print(colored('*', 'cyan'))
-            conf = config.get_config()
+            conf = config.get_local_config()
             r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}',
-                             cookies={'session': conf['session_cookie']})
+                             cookies={'session': conf['local']['session_cookie']})
             soup = BeautifulSoup(r.text, 'html.parser')
             part2_html = soup.find_all('article', class_='day-desc')[1].decode_contents()
 
@@ -297,9 +411,9 @@ def submit(year, day, solution_file='solution'):
             # also makes markdown look better
             part2_html = part2_html.replace('\n\n', '\n')
 
-            with open(f'{year}/{day}/prompt.md', 'a') as f:
+            with open(f'{year}/{dayfilled}/prompt.md', 'a') as f:
                 f.write(custom_markdownify(part2_html))
-            print(f'Appended part 2 prompt to {year}/{day}/prompt.md')
+            print(f'Appended part 2 prompt to {year}/{dayfilled}/prompt.md')
 
     elif status == Status.FAIL:
         print(colored('Incorrect!', 'red'))
@@ -319,7 +433,7 @@ def submit(year, day, solution_file='solution'):
 
 
 def countdown(year, day):
-
+    print("countdown")
     now = dt.now().astimezone(pytz.timezone('EST'))
 
     if now.year != int(year):
@@ -334,7 +448,7 @@ def countdown(year, day):
         curses.cbreak()
         curses.halfdelay(2)
         curses.use_default_colors()
-        if config.get_config()['disable_color']:
+        if bool(int(config.get_local_config()['local']['disable_color'])):
             for i in range(1, 4):
                 curses.init_pair(i, -1, -1)
         else:
@@ -363,3 +477,7 @@ def countdown(year, day):
     except KeyboardInterrupt:  # pragma: no cover
         print(colored('Countdown cancelled', 'red'))
         sys.exit(1)
+
+
+if '__main__' == __name__:
+    private_leaderboards_json(2022)
