@@ -306,8 +306,10 @@ def print_leaderboard(members,owner_name,board_id,top_score_len):
     print(f'\n{" "*(top_score_len+14)}1111111111222222'
           f'\n{" "*(top_score_len+5)}1234567890123456789012345')
     for i,member in enumerate(members):
-        position = f"  {i})" if len(str(i)) == 1 else f"{i}) {members[member]['local_score']}"
-        print(f'{position}', end='  ')
+        score = member['local_score']
+        if score < 10:
+            score = f' {score}'
+        print(f' {i+1}) {score}', end=' ')
         for day in range(1,26):
             if str(day) in member['completion_day_level']:
                 class_ = len(member['completion_day_level'][str(day)])
