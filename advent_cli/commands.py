@@ -241,7 +241,7 @@ def updateLeaderboardCache(year,board_id):
     r = requests.get(
                 f"https://adventofcode.com/{year}/leaderboard/private/view/{board_id}.json",
                 cookies={'session': conf['local']['session_cookie']},
-                headers={'User-Agent': 'Theodor.Wase@icloud.com https://github.com/Majwt/advent-cli'}
+                headers=headers
             ).json()
     r['last_access'] = dt.timestamp(dt.now())
     with open(f"{os.path.expanduser('~/.aoc-cfg')}/private_leaderboard_{year}_{board_id}.json", 'w') as f:
@@ -277,6 +277,9 @@ def private_leaderboards_json(year):
             min_age = 60*60
             if 'last_access' not in r or ('last_access' in r and dt.timestamp(dt.now()) - r['last_access'] > min_age):
                 updateLeaderboardCache(year,board_id)
+                f.close()
+                with open(f"{os.path.expanduser('~/.aoc-cfg')}/private_leaderboard_{year}_{board_id}.json", 'r') as f2:
+                    r = json.loads(f2.read())
             else:
                 
                 current_td = timedelta(seconds=min_age - round(timedelta(seconds=abs(dt.timestamp(dt.now())-r['last_access'])).total_seconds()))
@@ -286,7 +289,7 @@ def private_leaderboards_json(year):
             updateLeaderboardCache(year,board_id)
             print("cache was empty, try again")
             return
-        
+    
     owner_id = str(r['owner_id'])
     owner_name = 'Unknown'
     if owner_id in r['members']:
@@ -401,7 +404,8 @@ def submit(year, day, solution_file='solution'):
             print(colored('*', 'cyan'))
             conf = config.get_local_config()
             r = requests.get(f'https://adventofcode.com/{year}/day/{int(day)}',
-                             cookies={'session': conf['local']['session_cookie']})
+                             cookies={'session': conf['local']['session_cookie']},
+                             headers=headers)
             soup = BeautifulSoup(r.text, 'html.parser')
             part2_html = soup.find_all('article', class_='day-desc')[1].decode_contents()
 

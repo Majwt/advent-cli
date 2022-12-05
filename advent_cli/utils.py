@@ -82,9 +82,9 @@ def compute_answers(year, day, solution_file='solution', example=False, printFul
         colon = line.find(":")
         if part != -1 and colon != -1:
             if '1' in line[part:colon]:
-                part1_answer = int(line[colon+1:])
+                part1_answer = line[colon+1:]
             elif '2' in line[part:colon]:
-                part2_answer = int(line[colon+1:])
+                part2_answer = line[colon+1:]
             
         
         
